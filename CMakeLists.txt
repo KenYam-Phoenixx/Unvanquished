@@ -135,14 +135,14 @@ if (BUILD_SGAME OR BUILD_CGAME)
 
     # GLM
     include_directories(${LIB_DIR}/glm)
+
+    add_definitions( -DGLM_FORCE_EXPLICIT_CTOR )
+
+    add_library(srclibs-tinygettext EXCLUDE_FROM_ALL ${TINYGETTEXTLIST})
+    set_target_properties(srclibs-tinygettext PROPERTIES POSITION_INDEPENDENT_CODE 1 FOLDER "libs")
+    target_include_directories(srclibs-tinygettext PUBLIC ${LIB_DIR}/tinygettext/include)
+    target_compile_definitions(srclibs-tinygettext PUBLIC TINYGETTEXT_UTF8_ONLY)
 endif()
-
-add_definitions( -DGLM_FORCE_EXPLICIT_CTOR )
-
-add_library(srclibs-tinygettext EXCLUDE_FROM_ALL ${TINYGETTEXTLIST})
-set_target_properties(srclibs-tinygettext PROPERTIES POSITION_INDEPENDENT_CODE 1 FOLDER "libs")
-target_include_directories(srclibs-tinygettext PUBLIC ${LIB_DIR}/tinygettext/include)
-target_compile_definitions(srclibs-tinygettext PUBLIC TINYGETTEXT_UTF8_ONLY)
 
 # Warning options
 # keep
