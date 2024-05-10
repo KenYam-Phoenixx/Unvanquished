@@ -170,8 +170,8 @@ void CG_ProcessMarks()
 	for ( size_t n = 0; n < numMarks; n++ )
 	{
 		markMsgInput_t& input = markMsgInput[ n ];
-		markOriginalPoints_t& originalPoints = input.first;
-		markProjection_t& projection = input.second;
+		markOriginalPoints_t& originalPoints = input.originalPoints;
+		markProjection_t& projection = input.projection;
 
 		mark_t& m = marks[ n ];
 
