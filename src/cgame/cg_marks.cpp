@@ -147,33 +147,19 @@ struct mark_t
 	float texCoordScale;
 };
 
-std::array<mark_t, MAX_MARK_FRAGMENTS> marks;
-size_t numMarks = 0;
+BoundedVector<mark_t, MAX_MARK_POLYS> newMarks;
 
 void CG_ProcessMarks()
 {
-	if ( !numMarks )
+	std::vector<markMsgInput_t> markMsgInput;
+	std::vector<markMsgOutput_t> markMsgOutput;
+	markMsgInput.reserve( newMarks.size() );
+
+	for ( mark_t &m : newMarks )
 	{
-		return;
-	}
-
-	// Shared with the engine.
-	static std::vector<markMsgInput_t> markMsgInput;
-	static std::vector<markMsgOutput_t> markMsgOutput;
-
-	markMsgInput.reserve( MAX_MARK_FRAGMENTS );
-	markMsgOutput.reserve( MAX_MARK_FRAGMENTS );
-
-	markMsgInput.resize( numMarks );
-	markMsgOutput.resize( numMarks );
-
-	for ( size_t n = 0; n < numMarks; n++ )
-	{
-		markMsgInput_t& input = markMsgInput[ n ];
-		markOriginalPoints_t& originalPoints = input.originalPoints;
-		markProjection_t& projection = input.projection;
-
-		mark_t& m = marks[ n ];
+		markMsgInput_t input;
+		auto& originalPoints = input.first;
+		auto& projection = input.second;
 
 		// create the texture axis
 		VectorNormalize2( m.dir, m.axis[ 0 ] );
@@ -184,6 +170,7 @@ void CG_ProcessMarks()
 		m.texCoordScale = 0.5 * 1.0 / m.radius;
 
 		// create the full polygon
+		originalPoints.resize( 4 );
 		for ( size_t i = 0; i < 3; i++ )
 		{
 			originalPoints[ 0 ][ i ] = m.origin[ i ] - m.radius * m.axis[ 1 ][ i ] - m.radius * m.axis[ 2 ][ i ];
@@ -193,17 +180,19 @@ void CG_ProcessMarks()
 		}
 
 		VectorScale( m.dir, -20, projection );
+		markMsgInput.push_back( input );
 	}
 
-	trap_CM_BatchMarkFragments( markMsgInput, markMsgOutput );
+	trap_CM_BatchMarkFragments( 384, 128, markMsgInput, markMsgOutput );
 
-	for ( size_t n = 0; n < numMarks; n++ )
+	size_t numMarks = markMsgInput.size();
+	for ( size_t k = 0; k < numMarks; k++ )
 	{
-		const markMsgOutput_t& output = markMsgOutput[ n ];
-		const markFragments_t& markFragments = output.markFragments;
-		const markPoints_t& markPoints = output.markPoints;
+		const markMsgOutput_t& output = markMsgOutput[ k ];
+		const std::vector<markFragment_t> &markFragments = output.second;
+		const auto &markPoints = output.first;
 
-		mark_t& m = marks[ n ];
+		const mark_t& m = newMarks[ k ];
 
 		byte colors[ 4 ];
 		colors[ 0 ] = m.red * 255;
@@ -211,10 +200,8 @@ void CG_ProcessMarks()
 		colors[ 2 ] = m.blue * 255;
 		colors[ 3 ] = m.alpha * 255;
 
-		for ( int i = 0; i < output.numFragments; i++ )
+		for ( const markFragment_t &markFragment : markFragments )
 		{
-			const markFragment_t& markFragment = markFragments[ i ];
-
 			// we have an upper limit on the complexity of polygons
 			// that we store persistently
 			const int numPoints = std::min( markFragment.numPoints, MAX_VERTS_ON_POLY );
@@ -224,7 +211,7 @@ void CG_ProcessMarks()
 			for ( int j = 0; j < numPoints; j++ )
 			{
 				polyVert_t& vert = verts[ j ];
-				const markPoint_t& markPoint = markPoints[ markFragment.firstPoint + j ];
+				const std::array<float, 3> &markPoint = markPoints[ markFragment.firstPoint + j ];
 
 				VectorCopy( markPoint, vert.xyz );
 
@@ -296,13 +283,12 @@ void CG_RegisterMark( qhandle_t shader, const vec3_t origin, const vec3_t dir,
 	m.radius = radius;
 	m.temporary = temporary;
 
-	marks[ numMarks ] = m;
-	numMarks++;
+	newMarks.append( m );
 }
 
 void CG_ResetMarks()
 {
-	numMarks = 0;
+	newMarks.clear();
 }
 
 /*
