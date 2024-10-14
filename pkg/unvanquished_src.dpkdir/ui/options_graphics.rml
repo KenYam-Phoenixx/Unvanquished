@@ -157,6 +157,12 @@
 					<p><translate>Limit menu image size to save on memory.</translate></p>
 				</row>
 
+				<row>
+					<h3><translate>Use bindless textures if possible</translate></h3>
+					<input cvar="r_preferBindlessTextures" type="checkbox" />
+					<p><translate>Use the bindless texture extension if supported by hardwire/driver and not known to crash on the detected hardware/driver. This might improve performance.</translate>&nbsp;<translate>Experimental.</translate></p>
+				</row>
+
 				<h2><translate>High-precision rendering</translate></h2>
 				<row>
 					<input cvar="r_highPrecisionRendering" type="checkbox" />
